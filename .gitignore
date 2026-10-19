@@ -1,0 +1,25 @@
+# Generated workspace files
+build/
+install/
+log/
+logs/
+__pycache__/
+*.py[cod]
+*.log
+.venv/
+venv/
+# Runtime artifacts and downloaded weights
+evidence/
+weights/
+*.pt
+*.zip
+# Local-only documentation and settings
+README_DOCKER.md
+.agents/
+.codex/
+.aws/
+.vscode/
+.idea/
+.env
+.env.*
+*.Xauthority

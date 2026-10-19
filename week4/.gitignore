@@ -1,0 +1,15 @@
+build/
+install/
+log/
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+.agents/
+.codex/
+.aws/
+.env
+.env.*
+*.Xauthority
+
+/README_DOCKER.md

@@ -1,0 +1,5 @@
+# cv_bridge trong Humble dùng NumPy ABI 1.x.
+numpy==1.26.4
+opencv-python==4.11.0.86
+ultralytics==8.4.177
+PyYAML==6.0.3
