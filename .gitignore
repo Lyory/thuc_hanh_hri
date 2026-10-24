@@ -1,25 +1,18 @@
-# Generated workspace files
 build/
 install/
 log/
-logs/
-__pycache__/
-*.py[cod]
-*.log
+build_humble/
+install_humble/
+log_humble/
 .venv/
-venv/
-# Runtime artifacts and downloaded weights
-evidence/
-weights/
-*.pt
-*.zip
-# Local-only documentation and settings
-README_DOCKER.md
-.agents/
-.codex/
-.aws/
-.vscode/
-.idea/
-.env
-.env.*
-*.Xauthority
+__pycache__/
+*.pyc
+.docker-runtime/
+/docker/
+/.dockerignore
+/README_DOCKER.md
+/VALIDATION.md
+/scripts/docker.sh
+/.agents/
+/.codex/
+/.aws/
