@@ -1,0 +1,20 @@
+gesture_recognition_node:
+  ros__parameters:
+    camera_index: 0
+    confidence_threshold: 0.70
+    frame_rate: 20.0
+    max_frame_age: 0.40
+    show_window: true
+    mirror: true
+
+robot_behavior_node:
+  ros__parameters:
+    stable_time: 0.45
+    signal_timeout: 0.80
+    selection_timeout: 8.0
+    linear_speed: 0.12
+    angular_speed: 0.45
+    leg_distance: 0.35
+    circle_radius: 0.45
+    sensor_timeout: 0.60
+    stop_distance: 0.40
