@@ -1,9 +1,5 @@
 # Điều khiển TurtleBot 4 bằng cử chỉ tay
 
-Bài tuần 6 dùng **Ubuntu 22.04, ROS 2 Humble, Gazebo Fortress**, webcam thật,
-OpenCV và MediaPipe **Tasks Gesture Recognizer**. Toàn bộ thao tác chọn, xác nhận,
-dừng và hủy trong demo đều bằng tay. Không có file test trong bài.
-
 ## Các thành phần
 
 ```text
@@ -22,15 +18,6 @@ webcam → gesture_recognition_node → /detected_gesture (std_msgs/String)
 | `gesture_recognition.launch.py` | Đọc webcam, nhận diện, hiển thị và publish cử chỉ |
 | `gesture_control.launch.py` | Chạy mô phỏng cùng hai node; có thể dùng simulation đã mở |
 
-Mã nguồn ở `src/turtlebot4_gesture_control/turtlebot4_gesture_control/`.
-Thông số ở `src/turtlebot4_gesture_control/config/gesture_control.yaml`.
-Model chính thức `gesture_recognizer.task` được đặt trong thư mục `models/` của package.
-
-## Chuẩn bị trên Ubuntu 22.04
-
-Chạy trực tiếp trên **Ubuntu 22.04 + ROS 2 Humble**, không chạy các lệnh ROS bằng
-Python hoặc ROS của phiên bản Ubuntu khác. Cần có TurtleBot 4 Simulation
-(Gazebo Fortress) từ các bài trước và webcam laptop/USB.
 
 Lấy project:
 
@@ -52,13 +39,6 @@ source scripts/env.sh
 ros2 pkg prefix turtlebot4_ignition_bringup
 ros2 pkg prefix irobot_create_ignition_bringup
 ```
-
-Hai lệnh cuối phải tìm thấy package. Sau khi clone mới, thư mục `week4/` chỉ
-chứa source; nếu chưa có bản simulator đã cài, build theo `week4/README.md`
-trong repository trước, sau đó quay lại tuần 6. Nếu chưa có simulator, hoàn tất cài đặt
-[TurtleBot 4 Simulation](https://turtlebot.github.io/turtlebot4-user-manual/software/turtlebot4_simulator.html)
-cho Humble trước khi tiếp tục. Workspace simulator cần được build trên cùng hệ
-Ubuntu/ROS đang sử dụng.
 
 ## Cài thư viện và build
 
@@ -106,10 +86,6 @@ source scripts/env.sh
 Đợi robot xuất hiện ở tâm sân, LiDAR và odometry hoạt động; giữ một bàn tay trong
 khung hình, đủ sáng.
 
-Không mở thêm teleop, Nav2 hoặc publisher `/cmd_vel` khác khi demo. Robot và dock
-được spawn cách nhau hơn 5 m, nên robot không cần lệnh bàn phím để undock.
-Dock của các launch tiêu chuẩn tuần trước thường ở ngay cạnh robot; dùng launch
-`simulation.launch.py` của bài này để có đúng bố trí sân demo.
 
 | Cử chỉ / nội dung String | Tác dụng |
 | --- | --- |
@@ -146,18 +122,6 @@ Chỉ nhận Wave khi đang chờ/dừng hoặc đang chọn lời chào. Lúc �
 Wave cũng phải xác nhận bằng Thumbs Up để đáp ứng quy tắc mọi hành vi di chuyển
 đều cần xác nhận.
 
-### Kịch bản trình bày
-
-1. Giơ một ngón: chỉ thấy `SELECTED`, robot chưa chạy. Giơ ngón cái: tiến–lùi 4 lần.
-2. Giơ hai ngón rồi ngón cái: chạy một vòng tròn. Giữ ngón cái sau khi kết thúc:
-   robot vẫn đứng yên.
-3. Vẫy tay rồi ngón cái: robot quay trái–phải chào và trở lại hướng ban đầu gần đúng.
-4. Khi đang chạy, xòe tay: robot dừng; nắm tay: về chờ. Chọn lại trước lần chạy sau.
-5. Khi đang chạy, đưa tay ra ngoài camera: robot dừng sau timeout. Thử đóng cửa sổ
-   webcam hoặc rút camera: node điều khiển cũng dừng khi mất kết quả nhận diện.
-
-Không cần bấm phím trong các bước trên. `cv2.waitKey(1)` chỉ xử lý sự kiện cửa sổ,
-không ánh xạ phím sang lệnh robot.
 
 ## Chạy riêng từng thành phần
 
@@ -226,28 +190,4 @@ và robot tiến/lùi trong Gazebo. Khi chưa xác nhận, Twist phải bằng 0
   Trường hợp kill cưỡng bức cả node điều khiển phụ thuộc timeout vận tốc của base;
   cần xác minh cấu hình base trước khi mở rộng sang robot thật.
 
-## Kết thúc demo
 
-Dừng robot bằng Open Palm hoặc Closed Fist trước, rồi nhấn Ctrl+C tại terminal
-launch để đóng các node và Gazebo. Bàn phím chỉ dùng khởi chạy/kết thúc chương
-trình; chọn, xác nhận, dừng và hủy hành vi trong demo đều dùng cử chỉ tay.
-
-## Xử lý lỗi
-
-| Hiện tượng | Cách xử lý |
-| --- | --- |
-| Không có `/dev/video*` | Cắm/bật webcam, kiểm tra `ls -l /dev/video*` và quyền truy cập thiết bị |
-| Camera đang bị chiếm | Đóng browser/video call/webcam_viewer và node nhận diện cũ |
-| `No module named mediapipe` | Source `scripts/env.sh`, cài `python -m pip install -r requirements.txt` và build lại |
-| Không mở được cửa sổ | Chạy trong terminal desktop có DISPLAY; `show_window:=false` chỉ dành cho chạy không GUI |
-| Model không tồn tại | Chạy `bash scripts/build_workspace.sh`, hoặc truyền `model_path:=/đường/dẫn/model.task` |
-| Robot báo thiếu LiDAR/odom | Đợi spawn xong, kiểm tra bridge và topic; không xác nhận khi Gazebo pause |
-| Thường xuyên mất tín hiệu | Tăng ánh sáng, đưa cả bàn tay vào khung, giảm tải CPU; giữ Thumbs Up khi chạy |
-| Wave không được chọn | Vẫy ngang đủ rộng hai lần đổi chiều; giữ bàn tay xòe cùng độ cao, sau đó giữ thêm 0,45 giây |
-| Robot dừng vì vật cản | Dọn vùng mô phỏng hoặc khởi chạy lại sân; chọn và xác nhận lại |
-
-## Tài liệu gốc
-
-- [MediaPipe Gesture Recognizer Python](https://ai.google.dev/edge/mediapipe/solutions/vision/gesture_recognizer/python)
-- [OpenCV đọc và hiển thị webcam](https://docs.opencv.org/4.x/dd/d43/tutorial_py_video_display.html)
-- [TurtleBot 4 Simulator trên Humble](https://turtlebot.github.io/turtlebot4-user-manual/software/turtlebot4_simulator.html)
