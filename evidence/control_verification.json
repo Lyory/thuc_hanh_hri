@@ -1,0 +1,40 @@
+[
+  {
+    "time": 1793149437.5849762,
+    "state": "ACCEPTED",
+    "command": "Đi từ hành lang đến phòng học",
+    "route": [
+      "C",
+      "A"
+    ]
+  },
+  {
+    "time": 1793149437.5870695,
+    "state": "GOAL_SENT",
+    "region": "C",
+    "goal": {
+      "x": -6.0249999999999995,
+      "y": -1.9749999999999996,
+      "yaw": 0.0
+    }
+  },
+  {
+    "time": 1793149437.5910265,
+    "state": "BUSY",
+    "reason": "Đợi hoàn tất hoặc nói dừng lại trước khi nhận lệnh mới"
+  },
+  {
+    "time": 1793149437.5953848,
+    "state": "CANCEL_ACK"
+  },
+  {
+    "time": 1793149437.6417027,
+    "state": "GOAL_RESULT",
+    "region": "C",
+    "action_status": 5
+  },
+  {
+    "time": 1793149437.6431758,
+    "state": "CANCELED"
+  }
+]

@@ -1,0 +1,31 @@
+[
+  {
+    "command": "Đi đến khu vực A.",
+    "route": [
+      "A"
+    ],
+    "wall_seconds": 74.27,
+    "result": "PASS"
+  },
+  {
+    "command": "Di chuyển từ khu vực A đến khu vực B.",
+    "route": [
+      "A",
+      "B"
+    ],
+    "wall_seconds": 48.23,
+    "result": "PASS"
+  },
+  {
+    "command": "Đi đến phòng thí nghiệm.",
+    "route": [
+      "B"
+    ],
+    "wall_seconds": 5.88,
+    "result": "PASS"
+  },
+  {
+    "command": "Đi đến khu vực D.",
+    "result": "INVALID; no goal sent"
+  }
+]

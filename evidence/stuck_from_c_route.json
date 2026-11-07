@@ -1,0 +1,14 @@
+{
+  "initial_pose_in_C": [
+    0.18101388718092193,
+    -0.8735744850971303
+  ],
+  "command": "Đi từ khu vực A đến khu vực B.",
+  "completed_goals": [
+    "A",
+    "B"
+  ],
+  "wall_seconds": 122.76,
+  "max_recoveries": 0,
+  "result": "PASS"
+}

@@ -1,0 +1,34 @@
+{
+  "recognized": "Đi từ phòng A qua hành lang C rồi đến phòng B.",
+  "route": [
+    "A",
+    "C",
+    "B"
+  ],
+  "result": "PASS",
+  "source": "text",
+  "wall_seconds": 118.55,
+  "preview_points": 480,
+  "preview_visits_in_order": true,
+  "preview_on_free_cells": true,
+  "preview_cleared_on_completion": true,
+  "max_recoveries": 0,
+  "goal_results": [
+    {
+      "region": "A",
+      "step": 1,
+      "status": 4
+    },
+    {
+      "region": "C",
+      "step": 2,
+      "status": 4
+    },
+    {
+      "region": "B",
+      "step": 3,
+      "status": 4
+    }
+  ],
+  "unknown_middle_region": "rejected before planning or motion"
+}
