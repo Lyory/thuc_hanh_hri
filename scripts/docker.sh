@@ -10,7 +10,7 @@ case "$action" in
         docker build -t "$image" "$project_root"
         ;;
     test)
-        docker run --rm --init "$image" xvfb-run -a bash -c \
+        docker run --rm --init "$image" timeout 120s xvfb-run -a -e /dev/stderr bash -c \
             'python3 -m pytest -q tests && python3 scripts/verify_container.py'
         ;;
     exec)

@@ -56,7 +56,8 @@ cd thuc_hanh_hri
 
 `Dockerfile` dùng image công khai `ros:humble-ros-base-jammy`, không cần các
 image bài tuần trước trên máy tác giả. Build cài dependency, tải trọng số Emotion
-vào image, build gói bằng ROS Humble, chạy unit test và kiểm chứng runtime.
+vào image, build gói bằng ROS Humble và chạy unit test. Lệnh `test` kiểm chứng
+runtime trong container riêng sau khi build.
 Lần đầu cần mạng và vài GB dung lượng cho TensorFlow; chạy nhận diện sau khi
 build không cần tải mô hình nữa. Mã nguồn được COPY vào image: sau khi sửa mã,
 chạy lại lệnh build để cập nhật.
@@ -127,6 +128,8 @@ timeout vận tốc riêng để dừng khi tiến trình bị kill/mất mạng
 không thể gửi lệnh dừng khi hệ điều hành hoặc kết nối đã ngừng hoạt động.
 
 ## 4. Kiểm thử và minh chứng bài thực hành
+
+Kết quả đã thực hiện và giới hạn kiểm chứng được ghi trong [VALIDATION.md](VALIDATION.md).
 
 Kiểm thử tự động trong image đã build, không cần webcam hay robot:
 

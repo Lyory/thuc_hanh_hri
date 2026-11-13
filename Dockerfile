@@ -32,8 +32,7 @@ COPY scripts/ scripts/
 RUN source /opt/ros/humble/setup.bash \
     && colcon build --packages-select emotion_turtlebot \
     && source install/setup.bash \
-    && python3 -m pytest -q tests \
-    && xvfb-run -a python3 scripts/verify_container.py
+    && python3 -m pytest -q tests
 
 ENTRYPOINT ["/bin/bash", "/opt/week8/scripts/entrypoint.sh"]
 CMD ["ros2", "run", "emotion_turtlebot", "emotion_control"]
