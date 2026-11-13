@@ -2,7 +2,9 @@
 
 Gói ROS 2 Python dùng webcam, OpenCV và DeepFace để nhận diện biểu cảm,
 hiển thị hình ảnh cùng kết quả và xuất vận tốc lên `/cmd_vel` ở 20 Hz.
-Môi trường mục tiêu: Ubuntu 24.04, ROS 2 Jazzy, Python 3.12 và desktop có webcam.
+Môi trường chạy: **Docker Ubuntu 22.04, ROS 2 Humble, Python 3.10**.
+Host chỉ cần Docker, desktop X11/XWayland và webcam; không dùng ROS/Python trên host
+để build hoặc chạy project. Image dùng CPU, không yêu cầu CUDA/GPU.
 
 ## 1. Các hành động
 
@@ -34,66 +36,84 @@ mong muốn để kích hoạt lại. Mất mặt không tự kích hoạt lại
 Nếu nhiều người xuất hiện, chương trình chọn khuôn mặt lớn nhất trong từng ảnh;
 không theo dõi danh tính giữa các ảnh.
 
-## 2. Cài đặt
+## 2. Build Docker
 
-Trong thư mục bài tập:
+Trên máy Linux có Docker Engine đang hoạt động, cài thêm `xauth` trên host
+(ví dụ Ubuntu: `sudo apt-get install xauth`). Docker phải truy cập được bằng
+user hiện tại; có thể dùng `sudo ./scripts/docker.sh ...` nếu máy yêu cầu,
+nhưng khi chạy GUI nên dùng user desktop có quyền Docker và Xauthority.
+Không cần cài ROS, DeepFace hay tạo venv trên host.
 
-```bash
-source /opt/ros/jazzy/setup.bash
-python3 -m venv --system-site-packages .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-```
-
-`--system-site-packages` giúp dùng `rclpy` từ ROS đã cài. Không cài `rclpy`
-bằng pip. Cần OpenCV có GUI, không thay bằng `opencv-python-headless`.
-Nếu thiếu công cụ hệ thống: cài `python3-venv`, `python3-colcon-common-extensions`
-và `ros-jazzy-geometry-msgs` qua trình quản lý gói của Ubuntu.
-DeepFace/TensorFlow là các phụ thuộc lớn; lần đầu cần mạng để tải trọng số
-về `~/.deepface/weights`. Chương trình nạp mô hình trước khi mở camera.
-
-Build gói (vẫn trong thư mục bài tập và venv đã kích hoạt):
+Clone đúng nhánh sau khi project đã được đẩy lên GitHub, hoặc mở thư mục
+mã nguồn hiện có:
 
 ```bash
-python -m colcon build --symlink-install --packages-select emotion_turtlebot
-source install/setup.bash
+git clone --branch week8 https://github.com/Lyory/thuc_hanh_hri.git
+cd thuc_hanh_hri
+./scripts/docker.sh build
+./scripts/docker.sh test
 ```
 
-Dùng `python -m colcon` để entry point được build bằng Python của venv chứa
-DeepFace. Giữ venv khi chạy; mỗi terminal mới cần source ROS, activate venv
-và source `install/setup.bash`.
+`Dockerfile` dùng image công khai `ros:humble-ros-base-jammy`, không cần các
+image bài tuần trước trên máy tác giả. Build cài dependency, tải trọng số Emotion
+vào image, build gói bằng ROS Humble, chạy unit test và kiểm chứng runtime.
+Lần đầu cần mạng và vài GB dung lượng cho TensorFlow; chạy nhận diện sau khi
+build không cần tải mô hình nữa. Mã nguồn được COPY vào image: sau khi sửa mã,
+chạy lại lệnh build để cập nhật.
 
-## 3. Chạy
+Các phiên bản chính được cố định trong `requirements.txt`: DeepFace 0.0.93, RetinaFace 0.0.17,
+TensorFlow 2.16.2, tf-keras 2.16.0, NumPy 1.26.4 và OpenCV 4.10.0.84.
+Không dùng `opencv-python-headless` vì bài thực hành cần cửa sổ camera.
+RetinaFace được cố định để tránh phiên bản mới kéo thêm OpenCV headless.
+Build dùng pip 25.3, cache và tải tiếp sau gián đoạn để xử lý các gói lớn.
 
-Khởi động bringup TurtleBot hoặc mô phỏng của lớp trước. Máy chạy chương trình
-và robot cần cùng `ROS_DOMAIN_ID` và cấu hình DDS để tìm thấy nhau.
-Tắt các node teleop/navigation khác đang xuất vào cùng topic vận tốc.
+## 3. Chạy trong container
 
-Xác định kiểu message robot đang nhận:
+Khởi động bringup TurtleBot hoặc mô phỏng của lớp trước. Robot và container cần
+cùng `ROS_DOMAIN_ID`; mặc định script dùng domain 0. Script dùng mạng host và
+IPC host để DDS giao tiếp trên Linux. Tắt các node teleop/navigation khác đang
+xuất vào cùng topic vận tốc.
+
+Xem thông tin hệ điều hành, ROS và Python bên trong image:
 
 ```bash
-ros2 topic info /cmd_vel -v
+./scripts/docker.sh exec bash -c 'cat /etc/os-release; echo "$ROS_DISTRO"; python3 --version'
+./scripts/docker.sh exec ros2 topic info /cmd_vel -v
 ```
 
-Nếu robot nhận `geometry_msgs/msg/Twist` (mặc định của bài):
+Trong terminal desktop có `DISPLAY` và Xauthority hợp lệ, với webcam `/dev/video0`
+và robot nhận `geometry_msgs/msg/Twist`:
 
 ```bash
-ros2 run emotion_turtlebot emotion_control
+./scripts/docker.sh run
 ```
 
-Nếu driver robot nhận `geometry_msgs/msg/TwistStamped`:
+Script truyền đúng thiết bị webcam, socket X11 và cookie Xauthority vào container;
+không cần `--privileged` hoặc tắt kiểm soát truy cập X bằng `xhost +`.
+Wayland cần XWayland và `DISPLAY`; môi trường SSH/headless không có màn hình
+sẽ không mở được cửa sổ webcam. Lệnh `test` dùng màn hình ảo Xvfb nên không cần
+webcam hay màn hình desktop.
+
+Nếu driver nhận `geometry_msgs/msg/TwistStamped`:
 
 ```bash
-ros2 run emotion_turtlebot emotion_control --ros-args -p stamped:=true
+./scripts/docker.sh run --ros-args -p stamped:=true
 ```
 
-Đổi webcam, ví dụ camera số 1:
+Đổi webcam, ví dụ `/dev/video2`, đồng thời đặt chỉ số OpenCV tương ứng:
 
 ```bash
-ros2 run emotion_turtlebot emotion_control --ros-args -p camera_index:=1
+CAMERA_DEVICE=/dev/video2 ./scripts/docker.sh run --ros-args -p camera_index:=2
 ```
 
-Nếu robot dùng namespace, remap đúng topic, ví dụ `--ros-args -r /cmd_vel:=/robot1/cmd_vel`.
+Đặt domain khác, ví dụ 10, cho cả lệnh run và các terminal theo dõi:
+
+```bash
+ROS_DOMAIN_ID=10 ./scripts/docker.sh run
+ROS_DOMAIN_ID=10 ./scripts/docker.sh exec ros2 topic echo /cmd_vel
+```
+
+Nếu robot dùng namespace, thêm `--ros-args -r /cmd_vel:=/robot1/cmd_vel`.
 Không chạy cả hai kiểu message cùng lúc trên `/cmd_vel`.
 
 Cửa sổ hiện webcam, khung mặt, nhãn và điểm dự đoán, vận tốc tiến/lùi và góc.
@@ -108,22 +128,28 @@ không thể gửi lệnh dừng khi hệ điều hành hoặc kết nối đã 
 
 ## 4. Kiểm thử và minh chứng bài thực hành
 
-Kiểm thử tự động không cần DeepFace, webcam hay robot:
+Kiểm thử tự động trong image đã build, không cần webcam hay robot:
 
 ```bash
-python -m pytest -q tests
+./scripts/docker.sh test
 ```
 
 Các bài kiểm thử kiểm tra sáu ánh xạ, lọc kết quả liên tiếp, chuyển biểu cảm,
 mất mặt, ngưỡng điểm, watchdog, giới hạn hành động, không tự lặp,
 chọn mặt lớn nhất và phân biệt lỗi mô hình với không có mặt.
-Cần `pytest`, `rclpy`, `geometry_msgs` và OpenCV trong môi trường chạy test.
+Mọi dependency kiểm thử được cài trong Docker. `scripts/verify_container.py`
+kiểm tra Ubuntu 22.04/Python 3.10/Humble, chạy mô hình Emotion thật, xác nhận ảnh
+không có mặt không sinh nhãn, mở cửa sổ OpenCV bằng Xvfb, rồi chạy node và
+subscriber ROS thật với camera/nhãn giả để kiểm tra vận tốc và dừng khi camera lỗi.
+Phần ROS này dùng domain 187 và topic riêng `/week8_test/cmd_vel`.
+Kiểm chứng đó không thay thế việc nhận diện mặt thật qua webcam hay kết nối
+robot qua mạng.
 
-Để xem lệnh gửi thật từ chương trình, ở terminal khác đã source ROS:
+Để xem lệnh gửi thật từ chương trình, ở terminal khác trên host:
 
 ```bash
-ros2 topic echo /cmd_vel
-ros2 topic hz /cmd_vel
+./scripts/docker.sh exec ros2 topic echo /cmd_vel
+./scripts/docker.sh exec ros2 topic hz /cmd_vel
 ```
 
 Kiểm tra lần lượt sáu hàng trong bảng, giữ mỗi biểu cảm ít nhất ba lần suy luận;
@@ -139,7 +165,10 @@ thay thế được việc xác nhận nhận diện và chuyển động trên 
 - `emotion_turtlebot/controller.py`: lọc biểu cảm → ánh xạ vận tốc → giới hạn
   thời gian và dừng khi dữ liệu quá cũ; độc lập với ROS và camera.
 - `tests/`: kiểm thử logic điều khiển và đầu ra bộ nhận diện bằng dữ liệu giả.
+- `Dockerfile`, `.dockerignore`, `scripts/docker.sh`, `scripts/entrypoint.sh`: build và chạy container.
+- `scripts/verify_container.py`: kiểm chứng runtime trong container.
 - `package.xml`, `setup.py`, `setup.cfg`, `resource/`: khai báo gói `ament_python`.
 
-Tham khảo API: [DeepFace](https://github.com/serengil/deepface)
+Tham khảo API: [DeepFace](https://github.com/serengil/deepface),
+[ROS Docker image](https://hub.docker.com/_/ros)
 và [geometry_msgs](https://index.ros.org/p/geometry_msgs/).
