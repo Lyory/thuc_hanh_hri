@@ -1,5 +1,8 @@
 # Tuần 8: Biểu cảm khuôn mặt điều khiển TurtleBot
 
+**Chạy trực tiếp trên Ubuntu 22.04 + ROS 2 Humble:** xem
+[README_UBUNTU22_HUMBLE.md](README_UBUNTU22_HUMBLE.md).
+
 Chạy trong **Docker Ubuntu 22.04 + ROS 2 Humble**. Một lệnh mở:
 
 - **Gazebo 3D:** TurtleBot3 Burger trong phòng đơn giản 4 × 4 m.
