@@ -13,7 +13,8 @@ from deepface import DeepFace
 from geometry_msgs.msg import Twist, TwistStamped
 from rclpy.executors import SingleThreadedExecutor
 
-from emotion_turtlebot.node import EmotionTurtlebot, analyze_frame
+from emotion_turtlebot.node import EmotionTurtlebot
+from emotion_turtlebot.face import FaceDetector
 
 
 assert os.environ["ROS_DISTRO"] == "humble"
@@ -29,7 +30,7 @@ assert np.asarray(prediction).shape == (7,)
 assert np.isfinite(prediction).all()
 assert float(np.sum(prediction)) > 0
 frame = np.zeros((480, 640, 3), dtype=np.uint8)
-assert analyze_frame(frame, DeepFace) == (None, 0.0, None)
+assert FaceDetector().detect(frame) is None
 cv2.imshow("week8 GUI check", frame)
 cv2.waitKey(50)
 assert cv2.getWindowProperty("week8 GUI check", cv2.WND_PROP_VISIBLE) >= 1
@@ -54,7 +55,9 @@ for stamped, message_type in [(False, Twist), (True, TwistStamped)]:
     subscription = listener.create_subscription(
         message_type, "/week8_test/cmd_vel", messages.append, 10)
     executor = SingleThreadedExecutor()
-    with patch("emotion_turtlebot.node.cv2.VideoCapture", return_value=camera):
+    with patch("emotion_turtlebot.node.cv2.VideoCapture", return_value=camera), \
+            patch("emotion_turtlebot.node.FaceDetector") as face_detector:
+        face_detector.return_value.detect.return_value = {"x": 10, "y": 20, "w": 80, "h": 80}
         node = EmotionTurtlebot(detector)
         executor.add_node(node)
         executor.add_node(listener)
@@ -64,6 +67,17 @@ for stamped, message_type in [(False, Twist), (True, TwistStamped)]:
             if any((m.twist if stamped else m).linear.x > 0 for m in messages):
                 break
         assert any((m.twist if stamped else m).angular.z > 0 for m in messages)
+        # A newer camera frame must use its own box even with old inference pending.
+        current_region = {"x": 300, "y": 100, "w": 80, "h": 80}
+        face_detector.return_value.detect.return_value = current_region
+        node.tick()
+        assert node.region == current_region
+        assert node.emotion is None
+        assert node.controller.command(monotonic()) == (0.0, 0.0)
+        face_detector.return_value.detect.return_value = None
+        node.tick()
+        assert node.region is None and node.emotion is None
+        assert node.controller.command(monotonic()) == (0.0, 0.0)
         # Force an actual camera failure; the callback must publish zero.
         camera.read.return_value = (False, None)
         try:
@@ -87,4 +101,4 @@ for stamped, message_type in [(False, Twist), (True, TwistStamped)]:
     listener.destroy_node()
     executor.shutdown()
     rclpy.shutdown()
-    print(f"PASS ROS {message_type.__name__}: happy motion, camera failure stop, cleanup")
+    print(f"PASS ROS {message_type.__name__}: motion, current-frame box, face loss, camera failure, cleanup")

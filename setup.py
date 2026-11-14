@@ -1,3 +1,5 @@
+from glob import glob
+
 from setuptools import setup
 
 setup(
@@ -7,6 +9,9 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/emotion_turtlebot"]),
         ("share/emotion_turtlebot", ["package.xml"]),
+        ("share/emotion_turtlebot/models", glob("models/*")),
+        ("share/emotion_turtlebot/launch", glob("launch/*.launch.py")),
+        ("share/emotion_turtlebot/worlds", glob("worlds/*.world")),
     ],
     install_requires=["setuptools"],
     maintainer="Student",

@@ -1,37 +1,48 @@
-# Kiểm chứng Docker — 13/11/2026
+# Kiểm chứng bản sửa Gazebo và khung mặt
 
-Đã build và chạy image `hri-week8:humble` bằng Docker Engine.
-Không dùng ROS/Python trên host cho các kiểm tra dưới đây.
+Cập nhật ngày 14/11/2026. Mọi bước build và chạy ROS/Python bên dưới được thực
+hiện trong Docker Ubuntu 22.04.5, ROS 2 Humble, Python 3.10.12.
 
-| Kiểm tra | Kết quả |
-|---|---|
-| `/etc/os-release` trong container | Ubuntu 22.04.5 LTS, `VERSION_ID=22.04` |
-| `ROS_DISTRO` | `humble` |
-| `python3 --version` | Python 3.10.12 |
-| `pip check` | Không có dependency lỗi |
-| `colcon build` | Gói `emotion_turtlebot` build thành công |
-| `python3 -m pytest -q tests` | 23/23 tests đạt |
-| Mô hình Emotion thật | Nạp trọng số, chạy suy luận, nhận đủ 7 điểm đầu ra hữu hạn |
-| Ảnh đen không có mặt | Không sinh nhãn điều khiển |
-| OpenCV GUI trên Xvfb | Mở được cửa sổ và xử lý sự kiện |
-| Node và subscriber ROS thật, camera/nhãn giả | Nhận lệnh Happy và vận tốc 0 khi camera lỗi, với cả Twist/TwistStamped |
-| Executable `ros2 run` khi tắt mạng | Nạp mô hình offline, khởi tạo Humble, báo rõ webcam không tồn tại |
-| Luồng nhận diện thật trên ảnh mẫu DeepFace | Phát hiện mặt và trả nhãn `happy`, điểm làm tròn 100.0% |
+## Nhận diện mặt và biểu cảm
 
-Ảnh mẫu chỉ được tải vào bộ nhớ khi kiểm tra, từ
-[DeepFace v0.0.93 — img1.jpg](https://github.com/serengil/deepface/blob/v0.0.93/tests/dataset/img1.jpg).
-Kết quả của một ảnh mẫu không phải phép đo độ chính xác nhận diện của mô hình.
+- Gói ROS build thành công; 25/25 unit test đạt.
+- YuNet được đóng gói cùng project, kiểm tra SHA256 và chạy offline.
+- Khung mặt lấy từ ảnh camera hiện tại, không lấy từ ảnh suy luận cũ.
+- Ảnh mẫu dịch chuyển 120 px: khung YuNet dịch chuyển tương ứng, sai số dưới 8 px.
+- DeepFace nhận diện được biểu cảm từ phần mặt do YuNet phát hiện.
+- Webcam Integrated Webcam FHD: đọc được 30 ảnh và phát hiện mặt trong 30/30 ảnh
+  ở lần thử ngày 13/11. Không lưu hoặc đưa ảnh webcam vào repository.
+- Kiểm thử runtime xác nhận bỏ kết quả cũ khi mặt đổi vị trí lớn, dừng khi mất mặt,
+  dừng khi camera lỗi, với cả Twist và TwistStamped.
 
-Tái chạy kiểm tra chính:
+Ảnh mẫu dùng khi thử dịch chuyển là
+[img1.jpg trong DeepFace v0.0.93](https://github.com/serengil/deepface/blob/v0.0.93/tests/dataset/img1.jpg).
+Kết quả trên một ảnh mẫu hoặc 30 ảnh webcam không đo được độ chính xác trong
+mọi điều kiện ánh sáng, tư thế và biểu cảm.
 
-```bash
-./scripts/docker.sh build
-./scripts/docker.sh test
-./scripts/docker.sh exec bash -c 'cat /etc/os-release; echo "$ROS_DISTRO"; python3 --version'
-```
+## Gazebo và chuyển động
 
-Phiên làm việc không có thiết bị `/dev/video*`, chưa kết nối TurtleBot.
-Vì vậy chưa xác minh webcam vật lý, quyền hiển thị desktop X11 của người dùng,
-giao tiếp DDS tới robot qua LAN hoặc quỹ đạo thực tế. Phần GUI được kiểm tra
-bằng Xvfb; kiểm tra truyền lệnh ROS dùng hai node trong cùng tiến trình,
-domain 187 và topic riêng `/week8_test/cmd_vel`.
+Đã mở Gazebo 11.10.2 với TurtleBot3 Burger trong phòng 4 × 4 m. Các tia laser
+được ẩn để không che robot. Cửa sổ Gazebo và webcam được bố trí cạnh nhau.
+Ảnh minh chứng: [gazebo_room.png](evidence/gazebo_room.png).
+
+Đã phát lệnh trong mô phỏng riêng và đo `/odom`. Số liệu dưới đây tính cả
+1.5 giây phanh sau khi ngừng phát lệnh, do mô hình robot có quán tính.
+
+| Biểu cảm | Khoảng phát lệnh | Kết quả đo |
+|---|---|---|
+| Happy | 2 giây | Đi cung trái khoảng 0.193 m, góc +0.822 rad |
+| Sad | 2 giây | Đi cung phải khoảng 0.195 m, góc −0.781 rad |
+| Neutral | 1 giây | Không dịch chuyển đáng kể |
+| Angry | 1 giây | Lùi khoảng 0.082 m |
+| Fear | 1 giây | Tiến khoảng 0.082 m |
+| Surprise | Khoảng 10.47 giây | Xoay khoảng 6.429 rad, gần một vòng |
+
+Thời gian tiến/lùi/xoay của chương trình là điều khiển theo thời gian, chưa có
+vòng phản hồi góc/quãng đường. Vì vậy góc xoay và quãng đường có sai số thực tế.
+
+Demo mặc định dùng `--network none`, IPC riêng và ROS localhost trong container.
+Đã khởi động được cả webcam và Gazebo trên desktop trong chế độ này. Kiểm tra
+thêm ngày 14/11 xác nhận robot nhận `/cmd_vel` và phát `/odom` trong mạng cô lập.
+Chưa kiểm chứng điều khiển TurtleBot vật lý qua LAN; chế độ `camera` dành riêng
+cho trường hợp đó.
