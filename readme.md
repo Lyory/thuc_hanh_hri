@@ -1,5 +1,7 @@
 # Chạy trực tiếp trên Ubuntu 22.04 và ROS 2 Humble
 
+**Chạy bằng Docker:** xem [readme_docker.md](readme_docker.md).
+
 Hướng dẫn dành cho máy **đã cài Ubuntu 22.04 và ROS 2 Humble**, dùng Python 3.10
 của hệ thống. Chương trình mở Gazebo 3D với TurtleBot3 trong một phòng đơn giản
 và cửa sổ webcam nhận diện biểu cảm.
