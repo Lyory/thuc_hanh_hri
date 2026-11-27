@@ -1,25 +1,7 @@
 # Tuần 7 — Phân vùng bản đồ và điều hướng bằng giọng nói
 
-**Hướng dẫn chạy trực tiếp trên Ubuntu 22.04 và ROS 2 Humble** (không dùng Docker).
+**Hướng dẫn chạy trực tiếp trên Ubuntu 22.04 và ROS 2 Humble**
 
-TurtleBot 4, Gazebo Fortress, Nav2, OpenCV và Whisper. Đây là **project độc lập**,
-có thể clone riêng, không cần thư mục tuần khác. Simulator upstream nằm ở
-`src/turtlebot4_simulator`, giữ giấy phép gốc.
-
-```text
-map + region_seeds.yaml → segment_map.py → regions.json + ảnh phân vùng
-micro / file âm thanh → Whisper → /voice_command (std_msgs/String)
-                                      ↓
-                             voice_navigation.py
-                                      ↓
-                         NavigateToPose → Nav2 → robot
-```
-
-## 1. Cài đặt từ máy mới
-
-Yêu cầu: Ubuntu **22.04** desktop x86_64 (X11 hoặc XWayland), đã cài
-**ROS 2 Humble** theo [hướng dẫn chính thức](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)
-(kho APT `packages.ros.org` đã được thêm), có Internet ở lần cài đầu.
 
 ### 1.1. Cài gói hệ thống
 
