@@ -125,7 +125,7 @@ def main():
     a = p.parse_args()
     if not math.isfinite(a.timeout) or a.timeout <= 0:
         p.error('--timeout phải là số dương hữu hạn')
-    state_file = Path(__file__).resolve().parents[1]/'.docker-runtime/initialization.json'
+    state_file = Path(__file__).resolve().parents[1]/'.runtime/initialization.json'
     state_file.parent.mkdir(exist_ok=True)
     def write_state(state, **details):
         temporary = state_file.with_suffix('.tmp')

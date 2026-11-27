@@ -1,7 +1,7 @@
 build_humble/
 install_humble/
 log_humble/
-.docker-runtime/
+.runtime/
 models/
 __pycache__/
 .agents/
@@ -11,8 +11,12 @@ __pycache__/
 venv/
 *.pyc
 *.log
-evidence/*.jsonl
+evidence/*
+!evidence/synthetic_speech/
 *.zip
 config/regions.json
 config/region_labels.npy
 config/segmented_map.png
+thuc_hanh_t7.txt
+VALIDATION.md
+ket_qua/

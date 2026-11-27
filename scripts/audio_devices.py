@@ -7,8 +7,6 @@ def inputs():
     import sounddevice as sd
     descriptors={}
     pcm=Path('/proc/asound/pcm')
-    if not pcm.exists():
-        pcm=Path(__file__).resolve().parents[1]/'.docker-runtime/alsa-pcm'
     if pcm.exists():
         for line in pcm.read_text().splitlines():
             m=re.match(r'(\d+)-(\d+):\s*(.*?)\s*:',line)

@@ -1,16 +1,10 @@
 # Tuần 7 — Phân vùng bản đồ và điều hướng bằng giọng nói
 
-**Hướng dẫn cho người clone project từ GitHub, dùng ROS 2 Humble.**
-Nếu dùng máy của tác giả đã thiết lập Docker, xem [README.local.md](README.local.md)
-để chạy ngay, không lặp lại phần cài đặt.
+**Hướng dẫn chạy trực tiếp trên Ubuntu 22.04 và ROS 2 Humble** (không dùng Docker).
 
-Ubuntu **22.04**, **ROS 2 Humble**, TurtleBot 4, Gazebo Fortress, Nav2.
-Mọi bước build, xử lý ảnh, nhận âm thanh và chạy ROS đều ở trong Docker.
-Đây là **project độc lập**, có thể clone riêng. Dockerfile dùng image công khai
-`ros:humble-ros-base-jammy`; không cần image hay container của tác giả.
-Container `hri-week7` mount root project vào `/root/hri/week7` bên trong Docker;
-tên/vị trí thư mục clone trên host có thể tùy chọn. Không cần thư mục tuần khác.
-Simulator upstream nằm ở `src/turtlebot4_simulator`, giữ giấy phép gốc.
+TurtleBot 4, Gazebo Fortress, Nav2, OpenCV và Whisper. Đây là **project độc lập**,
+có thể clone riêng, không cần thư mục tuần khác. Simulator upstream nằm ở
+`src/turtlebot4_simulator`, giữ giấy phép gốc.
 
 ```text
 map + region_seeds.yaml → segment_map.py → regions.json + ảnh phân vùng
@@ -23,60 +17,47 @@ micro / file âm thanh → Whisper → /voice_command (std_msgs/String)
 
 ## 1. Cài đặt từ máy mới
 
-Hướng dẫn dành cho Linux Ubuntu desktop x86_64 có X11 hoặc XWayland, Docker
-Engine và kết nối Internet. Bên trong Docker luôn là Ubuntu 22.04 + Humble;
-host không cần cài ROS, Gazebo hoặc thư viện Python. Nếu host đã cài Humble,
-vẫn chạy các lệnh qua Docker bên dưới; script tự nạp môi trường ROS trong container.
-Windows/macOS và ARM chưa
-được kiểm chứng với cấu hình truyền GUI, thiết bị và mạng này.
+Yêu cầu: Ubuntu **22.04** desktop x86_64 (X11 hoặc XWayland), đã cài
+**ROS 2 Humble** theo [hướng dẫn chính thức](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)
+(kho APT `packages.ros.org` đã được thêm), có Internet ở lần cài đầu.
 
-### 1.1. Gói trên host
-
-Nếu Docker đã được cài và `docker info` chạy thành công, chỉ cài
-`git xauth` nếu thiếu. Nếu chưa có Docker, trên Ubuntu sạch:
+### 1.1. Cài gói hệ thống
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl git xauth
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
-sudo systemctl enable --now docker
-sudo usermod -aG docker "$USER"
+sudo apt update
+sudo apt install -y \
+  git build-essential cmake python3-colcon-common-extensions \
+  python3-venv python3-pip python3-opencv python3-yaml python3-pyqt5 \
+  libportaudio2 libgl1-mesa-dri libgl1-mesa-glx \
+  libxkbcommon-x11-0 libxcb-xinerama0 fonts-dejavu-core \
+  ignition-tools libignition-gazebo6 libignition-gazebo6-plugins \
+  libignition-rendering6-ogre2 libignition-physics5-dartsim \
+  libignition-gui6-dev qml-module-qtquick-extras \
+  ros-humble-turtlebot4-description ros-humble-turtlebot4-msgs \
+  ros-humble-turtlebot4-navigation ros-humble-turtlebot4-node ros-humble-turtlebot4-viz \
+  ros-humble-irobot-create-ignition-bringup ros-humble-irobot-create-nodes \
+  ros-humble-irobot-create-toolbox ros-humble-ign-ros2-control \
+  ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-nav2-simple-commander \
+  ros-humble-rviz2 ros-humble-joint-state-publisher
 ```
 
-Đăng xuất/đăng nhập lại để áp dụng nhóm Docker, sau đó kiểm tra:
+Gazebo Fortress được cài từ kho ROS. Không cần meta-package `ignition-fortress`
+đầy đủ, SciPy hay FFmpeg dòng lệnh (PyAV giải mã âm thanh).
 
-```bash
-docker info
-```
-
-Nếu đã dùng một bản Docker khác, làm theo [hướng dẫn Docker cho Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
-để xử lý gói xung đột trước khi chuyển bản cài. Các lệnh ở trên chỉ là hướng
-dẫn cho người clone; project không tự thay đổi Docker trên host.
-
-### 1.2. Clone riêng project
-
-Clone riêng nhánh `week7` của repository `thuc_hanh_hri`:
+### 1.2. Clone project
 
 ```bash
 git clone --branch week7 --single-branch https://github.com/Lyory/thuc_hanh_hri.git turtlebot4-voice-navigation
 cd turtlebot4-voice-navigation
 ```
 
-Repository cần có cấu trúc dưới đây ngay tại root, không cần thư mục bao ngoài
-`hri` hoặc các thư mục tuần khác:
+Cấu trúc tại root project:
 
 ```text
 .
-├── AGENTS.md
 ├── README.md
 ├── requirements.txt
-├── docker/Dockerfile
-├── scripts/                 # Docker, build, phân vùng, ASR, ROS nodes, kiểm tra
+├── scripts/                 # env, build, demo, phân vùng, ASR, ROS nodes, kiểm tra
 ├── launch/                  # Các launch của riêng project
 ├── config/                  # Seed, Nav2, RViz; nhãn vùng được build tạo lại
 ├── maps/map.yaml
@@ -85,44 +66,58 @@ Repository cần có cấu trúc dưới đây ngay tại root, không cần th�
 └── src/turtlebot4_simulator/ # Source đã kèm, bao gồm LICENSE và 4 package
 ```
 
-Khi đưa project này lên repository riêng, đưa toàn bộ source/cấu hình/map/world
-và Dockerfile vào Git. Không chỉ đưa README hoặc scripts. `src/turtlebot4_simulator`
-là source thực đã kèm, không cần submodule hay clone thêm workspace.
+`src/turtlebot4_simulator` là source thực đã kèm, không cần submodule hay clone thêm.
 
-### 1.3. Chuẩn bị lần đầu
+### 1.3. Tạo môi trường Python
 
-Từ root project trên host, build image công khai và 4 package simulator:
+Tại root project:
 
 ```bash
-bash scripts/docker.sh build
+source /opt/ros/humble/setup.bash
+python3 -m venv --system-site-packages .venv
+touch .venv/COLCON_IGNORE
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.txt
 ```
 
-Image cài Humble, Fortress runtime, Nav2, RViz, OpenCV, Qt, PortAudio và Whisper.
-Dependency APT nằm trong `docker/Dockerfile`, Python trong `requirements.txt`.
-Không cần SciPy, Git trong container hoặc FFmpeg dòng lệnh; PyAV giải mã âm thanh.
+`.venv` dùng chung thư viện ROS, OpenCV, PyQt5 của hệ thống qua
+`--system-site-packages`; chỉ cài thêm `numpy`, `faster-whisper`, `sounddevice`.
 
-Sau build có thể kiểm tra (khuyến nghị, không bắt buộc mỗi lần chạy):
+### 1.4. Build và kiểm tra
 
 ```bash
-bash scripts/docker.sh check
+bash scripts/build.sh
+```
+
+Script nạp `scripts/env.sh` (ROS Humble + `.venv`), build 4 package simulator vào
+`build_humble/`, `install_humble/` (giới hạn 2 job, đổi bằng `WEEK7_BUILD_JOBS=N`)
+rồi chạy phân vùng bản đồ. Sau build có thể kiểm tra (khuyến nghị):
+
+```bash
+source scripts/env.sh
+python scripts/check_core.py && python scripts/check_route_planning.py && python scripts/check_install.py
 ```
 
 Chỉ dùng một model Whisper `small`. Lần thu đầu sẽ tự tải nếu chưa có. Muốn tải
-trước khi mở demo, chạy tùy chọn này **một lần**:
+trước khi mở demo, chạy **một lần**:
 
 ```bash
-bash scripts/docker.sh recognition --download-only --model small
+source scripts/env.sh
+python scripts/speech_recognition.py --download-only --model small
 ```
 
-Model lưu trong `models/`; không cần tải lại sau khi dừng hoặc tạo lại container.
-Lần cài đầu cần Internet cho Docker Hub, APT Ubuntu/ROS, PyPI và Hugging Face.
+Model lưu trong `models/`, không cần tải lại.
+
+> **Mỗi terminal mới** muốn chạy lệnh `python scripts/...` hoặc `ros2 ...` của
+> project phải `source scripts/env.sh` tại root project trước. Script đặt
+> `ROS_DOMAIN_ID=77`; log/cache ROS và Gazebo nằm trong `.runtime/`.
 
 ## 2. Mở demo và nói lệnh
 
-Mỗi lần dùng chỉ cần một terminal tại root project trên host:
+Mỗi lần dùng chỉ cần một terminal tại root project:
 
 ```bash
-bash scripts/docker.sh demo
+bash scripts/demo.sh launch/week7.launch.py
 ```
 
 Demo chạy Gazebo server và mở cửa sổ **Điều hướng giọng nói · A / B / C**; tự khởi tạo
@@ -154,9 +149,10 @@ phải kết quả nhận giọng nói. Lệnh mới khi robot bận bị từ c
 chỉ tiếp tục khi Nav2 báo `SUCCEEDED`. Nếu một chặng thất bại, các chặng còn lại
 được hủy. Nút dừng phát lệnh hủy goal Nav2, không chỉ đổi chữ trên giao diện.
 
-Muốn mở thêm RViz, chạy `bash scripts/docker.sh demo rviz:=true`. RViz hiển thị map, LiDAR, costmap, đường Nav2, nhãn A/B/C và lớp màu Semantic
+Muốn mở thêm RViz, chạy `bash scripts/demo.sh launch/week7.launch.py rviz:=true`.
+RViz hiển thị map, LiDAR, costmap, đường Nav2, nhãn A/B/C và lớp màu Semantic
 Regions. Trên bản đồ chỉ ghi A/B/C để tránh lỗi font; tên đầy đủ nằm trong chú giải.
-GUI dùng Qt đã khai báo trong Docker, không cần trình duyệt hoặc web service.
+GUI dùng Qt (PyQt5), không cần trình duyệt hoặc web service.
 
 ### Tuyến nhiều điểm đến và đường dự kiến
 
@@ -170,7 +166,7 @@ Robot đến A trước dù đang ở C; mỗi chặng chỉ tiếp tục sau `S
 - Ô số cạnh nhãn A/B/C biểu thị thứ tự ghé. Dòng tuyến dùng ✓ cho điểm đã đến,
   ▶ cho chặng đang chạy và ○ cho điểm còn lại; trạng thái có số chặng, ví dụ 2/3.
 - RViz có display **Route Preview** màu tím, topic `/voice_navigation/preview_path`,
-  cùng các khu vực trong **Semantic Regions**. Bật qua `demo rviz:=true`.
+  cùng các khu vực trong **Semantic Regions**. Bật qua `rviz:=true`.
 - Nav2 có thể cập nhật đường chặng hiện tại khi xuất hiện vật cản. Đường toàn
   tuyến là phương án tính lúc nhận lệnh, không phải cam kết đường luôn giữ nguyên.
 
@@ -188,7 +184,7 @@ Giao diện chẩn đoán hiển thị điểm LiDAR màu đỏ, vòng cam là v
 chấm đen là vị trí ước lượng từ TF, vận tốc yêu cầu/odom và tốc độ mô phỏng.
 Khi robot bị chặn, xem cảnh báo bumper, giới hạn lùi hoặc hành vi Create 3;
 trạng thái Nav2 hiện khoảng cách còn lại và số lần phục hồi. Có đường đi chưa
-đảm bảo robot đang chuyển động. `demo` và `simulation` dùng chung khóa để không
+đảm bảo robot đang chuyển động. `demo.sh` dùng khóa `.runtime/demo.lock` để không
 chạy hai bộ mô phỏng/Nav2 trong cùng domain.
 
 ## 3. Bản đồ phòng và phân vùng
@@ -220,15 +216,16 @@ Dock được spawn riêng, có collision thấp hơn LiDAR nên footprint của
 thể liên tục đụng dock rồi tự lùi dù Nav2 đã vẽ đường. Điểm tham chiếu liên
 thông trong YAML là `start: [-0.35, 0]`, tức vị trí sau khi undock, không phải
 vị trí đang tiếp xúc dock lúc spawn.
-Nếu sửa hình học, tái tạo bằng Docker:
+Nếu sửa hình học, tái tạo bằng:
 
 ```bash
-bash scripts/docker.sh exec python scripts/generate_demo_map.py
-bash scripts/docker.sh segment
+source scripts/env.sh
+python scripts/generate_demo_map.py
+python scripts/segment_map.py
 ```
 
 Dừng demo trước khi đổi bản đồ rồi khởi động lại. Muốn chỉ sửa seed hoặc alias,
-sửa `config/region_seeds.yaml` và chạy `segment`.
+sửa `config/region_seeds.yaml` và chạy `python scripts/segment_map.py`.
 
 Phân vùng dùng OpenCV threshold occupancy, distance transform, thành phần liên
 thông 4 hướng. Ngưỡng `partition_clearance: 0.8` tách lõi phòng qua cửa hẹp,
@@ -252,15 +249,15 @@ về 16 kHz bằng PyAV. Mức thu dBFS/peak hiển thị sau khi thu. Tín hi�
 lặng được báo rõ, không âm thầm gửi văn bản rỗng thành lệnh robot.
 
 Nếu không nhận giọng nói, chọn micro DMIC/USB đúng thiết bị, kiểm tra mute trong
-cài đặt âm thanh host rồi thử lại. Mức thu có tín hiệu chưa đảm bảo ASR đúng;
+cài đặt âm thanh của Ubuntu rồi thử lại. Mức thu có tín hiệu chưa đảm bảo ASR đúng;
 đọc lại câu trong **Bạn nói**. Độ chính xác vẫn phụ thuộc tiếng ồn và phát âm.
 
 Không mở đồng thời terminal recognition và nút thu GUI trên cùng thiết bị.
-Muốn dùng riêng terminal:
+Muốn dùng riêng terminal (sau `source scripts/env.sh`):
 
 ```bash
-bash scripts/docker.sh recognition --list-devices
-bash scripts/docker.sh recognition --model small --device N
+python scripts/speech_recognition.py --list-devices
+python scripts/speech_recognition.py --model small --device N
 ```
 
 Thay `N` bằng chỉ số input. Tùy chọn `--once` thu một câu sau khi nạp model;
@@ -268,97 +265,82 @@ Thay `N` bằng chỉ số input. Tùy chọn `--once` thu một câu sau khi n�
 khiển khi demo còn chạy:
 
 ```bash
-bash scripts/docker.sh panel
+python scripts/voice_panel.py
 ```
 
 Dùng file thật đã đặt trong project:
 
 ```bash
-bash scripts/docker.sh recognition --audio evidence/lenh_cua_toi.wav
+python scripts/speech_recognition.py --audio evidence/lenh_cua_toi.wav
 ```
 
 Thêm `--no-publish` để chỉ nhận dạng. Với nhiều file, lệnh ASR không đợi robot
 hoàn tất giữa các file; gửi từng file và đợi hoàn tất để tránh `BUSY`.
 
-Script truyền ALSA `/dev/snd` vào Docker khi có. Nếu vừa gắn micro sau khi tạo
-container, dừng demo rồi `bash scripts/docker.sh recreate`. Môi trường chỉ dùng
-PulseAudio/PipeWire mà không có thiết bị ALSA cần chuyển tiếp âm thanh riêng.
-
 ## 5. Dừng, chạy nhẹ và cập nhật
 
-Ctrl+C terminal demo để dừng các node, rồi có thể dừng container:
-
-```bash
-bash scripts/docker.sh stop
-```
-
-Lần sau chỉ chạy `demo`. Không build lại hoặc tải model mỗi lần.
+Ctrl+C terminal demo để dừng các node. Lần sau chỉ chạy lại `demo.sh`; không build
+lại hoặc tải model mỗi lần.
 
 | Tình huống | Lệnh / cách xử lý |
 |---|---|
-| Không cần cửa sổ Gazebo/RViz, vẫn muốn bảng điều khiển | `bash scripts/docker.sh demo headless:=true rviz:=false` |
-| Chạy hoàn toàn không GUI | `bash scripts/docker.sh demo headless:=true rviz:=false panel:=false` |
-| Muốn tự initialize bằng terminal thứ hai | Chạy demo với `auto_initialize:=false`, rồi `bash scripts/docker.sh initialize` một lần |
-| Sửa Python/launch | Dừng rồi mở lại demo; không cần build image |
-| Sửa simulator C++ | `bash scripts/docker.sh rebuild` |
-| Sửa Dockerfile/requirements | `bash scripts/docker.sh build` |
-| Sửa seed/map | `segment`, rồi mở lại demo |
+| Không cần cửa sổ Gazebo/RViz, vẫn muốn bảng điều khiển | `bash scripts/demo.sh launch/week7.launch.py headless:=true rviz:=false` |
+| Chạy hoàn toàn không GUI | `bash scripts/demo.sh launch/week7.launch.py headless:=true rviz:=false panel:=false` |
+| Bật cả Gazebo 3D và RViz (nặng hơn) | `bash scripts/demo.sh launch/week7.launch.py headless:=false rviz:=true` |
+| Muốn tự initialize bằng terminal thứ hai | Chạy demo với `auto_initialize:=false`, rồi `python scripts/initialize.py` một lần |
+| Chỉ chạy mô phỏng + AMCL/Nav2, không có giao diện giọng nói | `bash scripts/demo.sh launch/localization.launch.py` |
+| Sửa Python/launch | Dừng rồi mở lại demo; không cần build lại |
+| Sửa simulator C++ | `bash scripts/build.sh` |
+| Sửa `requirements.txt` | `.venv/bin/python -m pip install -r requirements.txt` |
+| Sửa seed/map | `python scripts/segment_map.py`, rồi mở lại demo |
 
-Build giới hạn 2 job. ASR chỉ dùng model small; không yêu cầu tải model khác.
-Dockerfile không cài meta-package Fortress đầy đủ hoặc SciPy. Qt đã có trên máy
-hiện tại và được khai báo rõ để người clone cài đủ. Console Docker xoay vòng
-10 MB/file, 2 file khi tạo container mới. ROS log/cache nằm trong
-`.docker-runtime/` của project; log ứng dụng lưu trong `evidence/`.
+Log ứng dụng lưu trong `evidence/` (`transcripts.jsonl`, `navigation.jsonl`);
+log/cache ROS và Gazebo nằm trong `.runtime/`.
 
 ## 6. Kiểm tra và xử lý lỗi
 
 ```bash
-bash scripts/docker.sh check
+source scripts/env.sh
+python scripts/check_core.py && python scripts/check_route_planning.py && python scripts/check_install.py
 ```
 
 Lệnh kiểm tra logic phân tích câu, map/clearance, dependency, package, launch và
-cú pháp YAML RViz. Sau khi demo tự initialize xong, có thể kiểm tra Nav2 thực:
+cú pháp YAML RViz. Sau khi demo tự initialize xong, ở terminal thứ hai (sau
+`source scripts/env.sh`) có thể kiểm tra Nav2 thực:
 
 ```bash
 # Văn bản → Nav2 (robot sẽ di chuyển):
-bash scripts/docker.sh exec python scripts/verify_navigation.py
+python scripts/verify_navigation.py
 # Giọng tổng hợp có sẵn → Whisper → Nav2:
-bash scripts/docker.sh exec python scripts/verify_navigation.py --speech
+python scripts/verify_navigation.py --speech
 # Hủy và từ chối tuyến khi đang bận:
-bash scripts/docker.sh exec python scripts/verify_controls.py
+python scripts/verify_controls.py
 # Nhiều điểm, thứ tự A → C → B và hình học preview:
-bash scripts/docker.sh exec python scripts/verify_multidest.py
+python scripts/verify_multidest.py
 # Cùng câu nhiều điểm qua file giọng tổng hợp và Whisper:
-bash scripts/docker.sh exec python scripts/verify_multidest.py --speech
+python scripts/verify_multidest.py --speech
 ```
 
 Chạy từng kiểm thử riêng, không đồng thời ra lệnh qua micro. Nếu thiếu mẫu tổng
 hợp, `scripts/make_speech_fixtures.py` có thể tạo lại qua Google TTS (cần Internet);
 **không cần tải mẫu để dùng micro/demo**. Kết quả giọng tổng hợp không thay thế
-kiểm tra micro thật. Kết quả có ngày và giới hạn tại [VALIDATION.md](VALIDATION.md).
+kiểm tra micro thật. Kết quả kiểm thử được ghi vào `evidence/` (không đưa lên Git).
 Mẫu đọc chữ cái là `evidence/synthetic_speech/command_5.mp3`; mẫu dùng tên
 chức năng là `command_6.mp3` (dùng cho kiểm thử `--speech`). Script tạo mẫu chỉ
-tải file còn thiếu hoặc có nội dung đã thay đổi theo manifest. Kết quả sai của
-mẫu đọc chữ cái được ghi riêng trong VALIDATION, không tính là kiểm thử đạt.
+tải file còn thiếu hoặc có nội dung đã thay đổi theo manifest. Whisper small có
+thể nhận sai mẫu đọc chữ cái liền nhau; mẫu dùng tên chức năng ổn định hơn.
 
 | Lỗi | Xử lý |
 |---|---|
-| Docker permission denied | Kiểm tra nhóm Docker và đăng nhập lại sau khi thêm nhóm |
-| Không mở cửa sổ | Dùng terminal desktop có DISPLAY/Xauthority và X11/XWayland |
-| RViz trống | Chạy `check`; cấu hình phải đọc được YAML và Semantic Regions dùng Topic `/semantic_regions` |
-| Build báo thiếu đường dẫn libignition cũ | `rebuild` tự làm mới cache CMake, không cần tải lại gói |
+| `Cần Ubuntu 22.04 + ROS 2 Humble` | Cài ROS 2 Humble vào `/opt/ros/humble` |
+| `Chưa có .venv` | Làm lại bước 1.3 tại root project |
+| `Package ... not found` khi chạy | Chạy `bash scripts/build.sh`, rồi `source scripts/env.sh` trong terminal đó |
+| Không mở cửa sổ | Chạy từ terminal của phiên desktop (có `DISPLAY`) |
+| RViz trống | Chạy `check_install.py`; Semantic Regions phải dùng Topic `/semantic_regions` |
+| Build báo thiếu đường dẫn libignition cũ | `build.sh` đã dùng `--cmake-clean-cache`; nếu vẫn lỗi, xóa `build_humble/ install_humble/` rồi build lại |
 | AMCL chưa có pose / frame map | Đợi auto-initialize; không tắt demo trong khi chờ |
+| `Demo tuần 7 đang chạy` | Đã có một demo khác; dừng nó trước (Ctrl+C) |
 | Micro trả rỗng | Xem dBFS/peak; chọn DMIC/USB thay jack headset và kiểm tra mute |
-| Model/gói không tải được lần đầu | Kiểm tra kết nối Docker Hub/APT/PyPI/Hugging Face |
+| Model/gói không tải được lần đầu | Kiểm tra kết nối tới APT Ubuntu/ROS, PyPI, Hugging Face |
 
-Để kiểm tra clone độc lập từ source (chỉ dành cho phát triển):
-
-```bash
-bash scripts/verify_clean_clone.sh
-```
-
-Bản sao nằm trong `.docker-runtime/`, tự dọn cùng tag image sau khi kết thúc.
-Dùng `WEEK7_KEEP_CHECK=1` nếu cần giữ để debug. Không dùng bước này mỗi lần demo.
-
-Không chạy ROS trên host, không cần source ROS 2 Jazzy của host. Project dùng
-`ROS_DOMAIN_ID=77`, container riêng `hri-week7` và image công khai Humble.
+Project dùng `ROS_DOMAIN_ID=77` để tách khỏi các chương trình ROS khác trên máy.

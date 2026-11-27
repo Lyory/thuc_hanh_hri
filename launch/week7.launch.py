@@ -16,10 +16,10 @@ def generate_launch_description():
         DeclareLaunchArgument('map', default_value=str(root/'maps/map.yaml')),
         DeclareLaunchArgument('regions', default_value=str(root/'config/regions.json')),
         IncludeLaunchDescription(PythonLaunchDescriptionSource(str(root/'launch/localization.launch.py'))),
-        ExecuteProcess(cmd=['/opt/week7-venv/bin/python', str(root/'scripts/initialize.py')],
+        ExecuteProcess(cmd=['python3', str(root/'scripts/initialize.py')],
                        condition=IfCondition(LaunchConfiguration('auto_initialize')), output='screen'),
-        ExecuteProcess(cmd=['/opt/week7-venv/bin/python', str(root/'scripts/voice_panel.py')],
+        ExecuteProcess(cmd=['python3', str(root/'scripts/voice_panel.py')],
                        condition=IfCondition(LaunchConfiguration('panel')), output='screen'),
-        ExecuteProcess(cmd=['/opt/week7-venv/bin/python', str(root/'scripts/voice_navigation.py'),
+        ExecuteProcess(cmd=['python3', str(root/'scripts/voice_navigation.py'),
                             '--map', LaunchConfiguration('map'), '--regions', LaunchConfiguration('regions')], output='screen'),
     ])

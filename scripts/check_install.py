@@ -1,4 +1,4 @@
-"""Check installed libraries, ROS packages and launch files inside the container."""
+"""Check installed libraries, ROS packages and launch files on Ubuntu 22.04 / ROS 2 Humble."""
 import importlib
 from pathlib import Path
 import subprocess

@@ -262,7 +262,7 @@ class Panel(QtWidgets.QWidget):
             return
         active=future.result().current_state.label=='active'
         try:
-            initialized=json.loads((ROOT/'.docker-runtime/initialization.json').read_text()).get('state')=='READY'
+            initialized=json.loads((ROOT/'.runtime/initialization.json').read_text()).get('state')=='READY'
         except (OSError,ValueError):
             initialized=False
         self.robot_ready=bool(active and self.map.robot and initialized)
