@@ -1,11 +1,5 @@
 # Chạy trực tiếp trên Ubuntu 22.04 và ROS 2 Humble
 
-**Chạy bằng Docker:** xem [readme_docker.md](readme_docker.md).
-
-Hướng dẫn dành cho máy **đã cài Ubuntu 22.04 và ROS 2 Humble**, dùng Python 3.10
-của hệ thống. Chương trình mở Gazebo 3D với TurtleBot3 trong một phòng đơn giản
-và cửa sổ webcam nhận diện biểu cảm.
-
 ## 1. Clone project
 
 Mở terminal Bash và chạy:
@@ -124,24 +118,3 @@ Chạy bằng bộ dựng hình phần mềm:
 ```bash
 LIBGL_ALWAYS_SOFTWARE=1 ros2 launch emotion_turtlebot demo.launch.py
 ```
-
-## 6. Nếu điều khiển TurtleBot thật
-
-Dừng demo Gazebo, khởi động bringup của robot và kết nối máy với mạng của robot.
-Kích hoạt ROS, `.venv` và `install/setup.bash` như trên. Ví dụ robot dùng domain `10`:
-
-```bash
-export ROS_DOMAIN_ID=10
-export ROS_LOCALHOST_ONLY=0
-ros2 run emotion_turtlebot emotion_control
-```
-
-Đặt domain cho khớp với robot. Tắt các chương trình teleop/navigation khác đang
-gửi lệnh lên `/cmd_vel`. Nếu driver nhận `TwistStamped`:
-
-```bash
-ros2 run emotion_turtlebot emotion_control --ros-args -p stamped:=true
-```
-
-Tham khảo cách dùng Python và môi trường ảo trong
-[tài liệu ROS 2 Humble](https://docs.ros.org/en/humble/How-To-Guides/Using-Python-Packages.html).
