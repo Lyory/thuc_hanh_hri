@@ -23,3 +23,5 @@ README_DOCKER.md
 .env
 .env.*
 *.Xauthority
+# Local validation logs
+VALIDATION.md
